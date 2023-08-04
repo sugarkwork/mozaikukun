@@ -107,7 +107,7 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
 
     block_size, margin = calculate_pixel_block_and_margin(original_image)
 
-    detection_results = object_detector(original_image, save=False, device='cpu', project="yolov8x", name="pname1",
+    detection_results = object_detector(original_image, save=False, device=DEVICE, project="yolov8x", name="pname1",
                                         verbose=False)
 
     result = {}
@@ -122,7 +122,7 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
             cropped_region = original_image.crop(
                 (bounding_box["x1"], bounding_box["y1"], bounding_box["x2"], bounding_box["y2"]))
 
-            segmentation_results = segmenter(cropped_region, save=False, device='cpu', project="myseg2", name="pname2",
+            segmentation_results = segmenter(cropped_region, save=False, device=DEVICE, project="myseg2", name="pname2",
                                              verbose=False)
             for segmentation in segmentation_results:
                 for segmented_object in json.loads(segmentation.tojson()):
