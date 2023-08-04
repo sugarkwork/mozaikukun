@@ -1,6 +1,7 @@
 import math
 import os
 from glob import glob
+import threading
 from multiprocessing import Process, Queue
 import json
 import time
@@ -108,11 +109,8 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
     detection_results = object_detector(original_image, save=False, device='1', project="yolov8x", name="pname1",
                                         verbose=False)
 
-    result = {
-        "penis": [],
-        "sex": [],
-        "pussy": []
-    }
+    result = {}
+    sensitive_areas = ["pussy", "penis", "sex"]
 
     for detection in detection_results:
         for detected_object in json.loads(detection.tojson()):
@@ -128,8 +126,8 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
             for segmentation in segmentation_results:
                 for segmented_object in json.loads(segmentation.tojson()):
                     name = segmented_object["name"]
-                    if name != "pussy" and name != "sex" and name != "penis":
-                        continue
+                    #if name not in sensitive_areas:
+                    #    continue
                     segments = segmented_object["segments"]
                     segment_box = resize_bounding_box(segmented_object["box"], margin, block_size)
 
@@ -146,6 +144,8 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
                     mosaic_position = (
                         int(bounding_box["x1"] + segment_box["x1"]), int(bounding_box["y1"] + segment_box["y1"]))
                     final_image.paste(mosaic_masked_image, mosaic_position)
+                    if name not in result:
+                        result[name] = []
                     result[name].append(increase_image_opacity(final_image))
 
     return result
@@ -170,11 +170,15 @@ def main():
     worker_count = 3
 
     worker_processes = []
+    worker_queue = {}
     task_queue = Queue()
     result_queue = Queue()
 
     for worker_number in range(worker_count):
-        p = Process(target=image_detection_worker, args=(worker_number, task_queue, result_queue))
+        worker_queue[worker_number] = Queue()
+        p = Process(
+            target=image_detection_worker,
+            args=(worker_number, task_queue, result_queue, worker_queue[worker_number]))
         p.start()
         worker_processes.append(p)
 
@@ -183,7 +187,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
 
     for image_path in glob("input/*.jpg"):
-        task_queue.put((Image.open(image_path), image_path))
+        task_queue.put((Image.open(image_path), image_path, {}))
 
     sensitive_areas = ["pussy", "penis", "sex"]
 
