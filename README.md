@@ -18,3 +18,9 @@ AI will automatically mosaic the obscene part of the obscene image.
 * Put the image you want to mosaic in the input directory.
 * Run: python mozaikukun.py
 * An output directory will be created and the layers of the mosaicked image will be output.
+
+# Future development schedule
+- Change mosaic size.
+- Batch processing (directory or ZIP file)
+- Hiding processing other than mosaic (white fill, Gaussian blur, etc.)
+- Make it possible to decide whether to apply or not for each detected part.
