@@ -29,7 +29,6 @@ def mosaic_process(input_img, pussy, penis, sex, anus, nipple):
         if process_mode.get(key) == "mosaic":
             for mosaic_img in result[key]:
                 mosaic_img = mosaic_img.convert("RGBA")
-                mosaic_img.save("hoge.png")
                 img = Image.alpha_composite(img, mosaic_img)
 
     return img
