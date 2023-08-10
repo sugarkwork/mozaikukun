@@ -1,11 +1,10 @@
 import math
 import os
 from glob import glob
-import threading
 from multiprocessing import Process, Queue
 import json
 import time
-
+from _queue import Empty
 from PIL.Image import Image
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
@@ -14,7 +13,7 @@ from typing import Dict, Tuple
 BLOCK_SIZE_RATIO = 100
 MARGIN_FACTOR = 3
 MARGIN_EXTRA = 20
-DEVICE='cpu' # Specify the device number when using CUDA. Example: DEVICE='0'
+DEVICE = 'cpu'  # Specify the device number when using CUDA. Example(CUDA): DEVICE='0' Example(cpu): DEVICE='cpu'
 
 
 def calculate_pixel_block_and_margin(image: Image.Image) -> Tuple[int, int]:
@@ -90,13 +89,17 @@ def image_detection_worker(process_id: int, input_queue: Queue, result_queue: Qu
     object_detector = YOLO("yolov8x.pt")
     segmenter = YOLO("myseg3.pt")
     while True:
-        img, name = input_queue.get()
+        img, name, options = input_queue.get()
+        if img == None and name == None and options == None:
+            break
         print(f"{process_id}: get {name}")
         start_time = time.time()
         result_queue.put((process_and_analyze_image(img, object_detector, segmenter), name))
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(f"{process_id}: put ({elapsed_time} sec) {name}")
+
+    print(f"exit subprocess {process_id}")
 
 
 def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segmenter: YOLO) -> Dict:
@@ -111,7 +114,6 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
                                         verbose=False)
 
     result = {}
-    sensitive_areas = ["pussy", "penis", "sex"]
 
     for detection in detection_results:
         for detected_object in json.loads(detection.tojson()):
@@ -127,8 +129,6 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
             for segmentation in segmentation_results:
                 for segmented_object in json.loads(segmentation.tojson()):
                     name = segmented_object["name"]
-                    #if name not in sensitive_areas:
-                    #    continue
                     segments = segmented_object["segments"]
                     segment_box = resize_bounding_box(segmented_object["box"], margin, block_size)
 
@@ -171,38 +171,51 @@ def main():
     worker_count = 3
 
     worker_processes = []
-    worker_queue = {}
     task_queue = Queue()
     result_queue = Queue()
 
     for worker_number in range(worker_count):
-        worker_queue[worker_number] = Queue()
         p = Process(
             target=image_detection_worker,
-            args=(worker_number, task_queue, result_queue, worker_queue[worker_number]))
+            args=(worker_number, task_queue, result_queue))
         p.start()
         worker_processes.append(p)
 
+    # dir
     output_dir = "output"
-
     os.makedirs(output_dir, exist_ok=True)
 
+    # task queue
     for image_path in glob("input/*.jpg"):
         task_queue.put((Image.open(image_path), image_path, {}))
 
+    # exit command
+    for _ in range(worker_count):
+        task_queue.put((None, None, None))
+
     sensitive_areas = ["pussy", "penis", "sex"]
 
-    while True:
-        result_data, image_name = result_queue.get()
+    while not result_queue.empty() or any(p.is_alive() for p in worker_processes):
+        try:
+            result_data, image_name = result_queue.get(timeout=1)
+        except Empty:
+            continue
         for sensitive_area in sensitive_areas:
             image_number = 0
+            if sensitive_area not in result_data:
+                continue
             for result_image in result_data[sensitive_area]:
                 new_image_filename = (f"{os.path.splitext(os.path.basename(image_name))[0]}_"
                                       f"{sensitive_area}_{image_number}.png")
                 image_save_path = os.path.join(output_dir, new_image_filename)
                 result_image.save(image_save_path)
+                print(f"save: {image_save_path}")
                 image_number += 1
 
+    # join
+    for worker in worker_processes:
+        worker.join()
+        print(f"join subprocess : {worker}")
 
 if __name__ == '__main__':
     main()
