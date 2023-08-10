@@ -17,7 +17,8 @@ DEVICE = 'cpu'  # Specify the device number when using CUDA. Example(CUDA): DEVI
 
 
 class DetectedObject:
-    def __init__(self, block_size: int, bounding_box: dict, cropped_region, margin, original_image, segments, segment_box):
+    def __init__(self, block_size: int, bounding_box: dict, cropped_region: Image.Image, margin: int,
+                 original_image: Image.Image, segments: dict[str, list], segment_box: dict[str, int]):
         self.block_size = block_size
         self.bounding_box = bounding_box
         self.cropped_region = cropped_region
@@ -26,7 +27,7 @@ class DetectedObject:
         self.segments = segments
         self.segment_box = segment_box
 
-    def get_mosaic(self, rate: float = 1.0, margin: int = 5):
+    def get_mosaic(self, rate: float = 1.0, margin: int = 5) -> Image.Image:
         mask, empty_mask = self.create_transparent_mask(self.segment_box, self.segments, margin)
         masked_image = self.apply_mask_on_image(self.cropped_region, self.segment_box, mask, empty_mask)
         mosaic_masked_image = self.generate_mosaic(masked_image, int(self.block_size * rate))
@@ -36,24 +37,13 @@ class DetectedObject:
         final_image.paste(mosaic_masked_image, mosaic_position)
         return self.increase_image_opacity(final_image)
 
-    def get_white(self, margin: int = 5):
+    def get_white(self, margin: int = 5) -> Image.Image:
         mask, _ = self.create_transparent_mask(self.segment_box, self.segments, margin)
         final_image = Image.new('RGBA', self.original_image.size)
         mosaic_position = (
             int(self.bounding_box["x1"] + self.segment_box["x1"]), int(self.bounding_box["y1"] + self.segment_box["y1"]))
         final_image.paste(mask, mosaic_position)
         return final_image
-    def resize_bounding_box(self, bounding_box: Dict[str, int], margin: int, block_size: int) -> Dict[str, int]:
-        """
-        Resize the bounding box by adding the margin.
-        """
-        bounding_box["x1"] = int((bounding_box["x1"] - margin) / block_size) * block_size
-        bounding_box["x2"] = int(math.ceil((bounding_box["x2"] + margin) / block_size) * block_size)
-
-        bounding_box["y1"] = int((bounding_box["y1"] - margin) / block_size) * block_size
-        bounding_box["y2"] = int(math.ceil((bounding_box["y2"] + margin) / block_size) * block_size)
-
-        return bounding_box
 
     def create_transparent_mask(self, segment_box: Dict[str, int], segments: Dict[str, list],
                                 margin: int=5) -> tuple[Image, Image]:
@@ -153,7 +143,7 @@ def image_detection_worker(process_id: int, input_queue: Queue, result_queue: Qu
     print(f"exit subprocess {process_id}")
 
 
-def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segmenter: YOLO) -> Dict:
+def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segmenter: YOLO) -> Dict[str, list]:
     """
     Process a single image, analyze it and save the result.
     """
