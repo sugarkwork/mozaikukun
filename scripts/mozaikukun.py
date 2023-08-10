@@ -6,7 +6,6 @@ import numpy as np
 from ultralytics import YOLO
 
 import modules.scripts as scripts
-from modules import images
 from modules.processing import process_images
 from modules.shared import opts
 
@@ -22,15 +21,23 @@ class Mozaikukun(scripts.Script):
         return "Mozaikukun"
 
     def show(self, is_img2img):
-        return True
+        return scripts.AlwaysVisible
 
     def ui(self, is_img2img):
-        pussy = gr.Radio(label="pussy", choices=['raw', 'mosaic'], value='mosaic')
-        penis = gr.Radio(label="penis", choices=['raw', 'mosaic'], value='mosaic')
-        sex = gr.Radio(label="sex", choices=['raw', 'mosaic'], value='mosaic')
-        anus = gr.Radio(label="anus", choices=['raw', 'mosaic'], value='raw')
-        nipples = gr.Radio(label="nipples", choices=['raw', 'mosaic'], value='raw')
-        return [pussy, penis, sex, anus, nipples]
+        with gr.Accordion("Mozaikukun", open=False):
+            with gr.Row():
+                enabled = gr.Checkbox(
+                    label="Enabled",
+                    value=False,
+                    visible=True,
+                )
+            with gr.Row():
+                pussy = gr.Radio(label="pussy", choices=['raw', 'mosaic'], value='mosaic')
+                penis = gr.Radio(label="penis", choices=['raw', 'mosaic'], value='mosaic')
+                sex = gr.Radio(label="sex", choices=['raw', 'mosaic'], value='mosaic')
+                anus = gr.Radio(label="anus", choices=['raw', 'mosaic'], value='raw')
+                nipples = gr.Radio(label="nipples", choices=['raw', 'mosaic'], value='raw')
+        return [enabled, pussy, penis, sex, anus, nipples]
     
     def mosaic_process(self, input_img, pussy, penis, sex, anus, nipple):
         img = Image.fromarray(np.uint8(input_img))
@@ -56,14 +63,10 @@ class Mozaikukun(scripts.Script):
 
         return img
 
-    def run(self, p, pussy, penis, sex, anus, nipples):
-        p.do_not_save_samples = True
+    def postprocess_image(
+            self, p, pp, enabled, pussy, penis, sex, anus, nipples):
 
-        proc = process_images(p)
+        if not enabled:
+            return
 
-        for i in range(len(proc.images)):
-            ret = self.mosaic_process(proc.images[i], pussy, penis, sex, anus, nipples)
-            proc.images[i] = ret
-            images.save_image(proc.images[i], p.outpath_samples, "", proc.seed + i, proc.prompt, opts.samples_format, info= proc.info, p=p)
-
-        return proc
+        pp.image = self.mosaic_process(pp.image, pussy, penis, sex, anus, nipples)
