@@ -57,11 +57,11 @@ class Mozaikukun(scripts.Script):
                     type="value"
                 )
             with gr.Row():
-                pussy = gr.Radio(label="pussy", choices=['raw', 'mosaic'], value='mosaic')
-                penis = gr.Radio(label="penis", choices=['raw', 'mosaic'], value='mosaic')
-                sex = gr.Radio(label="sex", choices=['raw', 'mosaic'], value='mosaic')
-                anus = gr.Radio(label="anus", choices=['raw', 'mosaic'], value='raw')
-                nipples = gr.Radio(label="nipples", choices=['raw', 'mosaic'], value='raw')
+                pussy = gr.Radio(label="pussy", choices=['raw', 'mosaic', 'white'], value='mosaic')
+                penis = gr.Radio(label="penis", choices=['raw', 'mosaic', 'white'], value='mosaic')
+                sex = gr.Radio(label="sex", choices=['raw', 'mosaic', 'white'], value='mosaic')
+                anus = gr.Radio(label="anus", choices=['raw', 'mosaic', 'white'], value='raw')
+                nipples = gr.Radio(label="nipples", choices=['raw', 'mosaic', 'white'], value='raw')
         return [enabled, segmenter_name, pussy, penis, sex, anus, nipples]
     
     def mosaic_process(self, input_img, segmenter_name, pussy, penis, sex, anus, nipple):
@@ -81,10 +81,11 @@ class Mozaikukun(scripts.Script):
             if key not in process_mode:
                 continue
 
-            if process_mode.get(key) == "mosaic":
-                for mosaic_img in result[key]:
-                    mosaic_img = mosaic_img.convert("RGBA")
-                    img = Image.alpha_composite(img, mosaic_img)
+            for detect_obj in result[key]:
+                process_image = detect_obj.get_image(process_mode.get(key))
+                if process_image is None:
+                    continue
+                img = Image.alpha_composite(img, process_image.convert("RGBA"))
 
         return img
 

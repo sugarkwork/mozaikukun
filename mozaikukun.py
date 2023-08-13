@@ -6,6 +6,7 @@ import json
 import time
 from _queue import Empty
 from PIL.Image import Image
+from PIL import ImageFilter
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
 from typing import Dict, Tuple
@@ -27,26 +28,88 @@ class DetectedObject:
         self.segments = segments
         self.segment_box = segment_box
 
-    def get_mosaic(self, rate: float = 1.0, margin: int = 5) -> Image.Image:
+    def get_image(self, process_type="mosaic", options: dict = None) -> Image.Image:
+        supported_types = {
+            "raw": self.get_raw,
+            "mosaic": self.get_mosaic,
+            "white": self.get_white,
+            "star": self.get_star,
+            "heart": self.get_heart,
+            "blur": self.get_blur,
+        }
+        if process_type not in supported_types:
+            process_type = "mosaic"
+
+        return supported_types[process_type](options)
+
+    def get_star(self, _: dict = None) -> None:
+        return None
+
+    def get_heart(self, _: dict = None) -> None:
+        return None
+
+    def get_blur(self, _: dict = None) -> None:
+        return None
+
+    def get_raw(self, _: dict = None) -> None:
+        return None
+
+    def get_mosaic(self, options: dict = None) -> Image.Image:
+        if options is None:
+            options = {}
+        rate = min(max(float(options.get("rate", 1.0)), 0.0), 1.0)
+        margin = min(max(int(options.get("margin", 5)), 0), 1024)
+        increase_level = min(max(int(options.get("increase_level", 10)), 0), 1024)
+
         mask, empty_mask = self.create_transparent_mask(self.segment_box, self.segments, margin)
         masked_image = self.apply_mask_on_image(self.cropped_region, self.segment_box, mask, empty_mask)
         mosaic_masked_image = self.generate_mosaic(masked_image, int(self.block_size * rate))
         final_image = Image.new('RGBA', self.original_image.size)
         mosaic_position = (
-            int(self.bounding_box["x1"] + self.segment_box["x1"]), int(self.bounding_box["y1"] + self.segment_box["y1"]))
+            int(self.bounding_box["x1"] + self.segment_box["x1"]),
+            int(self.bounding_box["y1"] + self.segment_box["y1"]))
         final_image.paste(mosaic_masked_image, mosaic_position)
-        return self.increase_image_opacity(final_image)
+        return self.increase_image_opacity(final_image, increase_level)
 
-    def get_white(self, margin: int = 5) -> Image.Image:
+    def get_white(self, options: dict = None) -> Image.Image:
+        if options is None:
+            options = {}
+        blur_radius = min(max(float(options.get("blur_radius", 5)), 0.0), 1.0)
+        margin = min(max(int(options.get("margin", 5)), 0), 1024)
+
+        # draw
         mask, _ = self.create_transparent_mask(self.segment_box, self.segments, margin)
         final_image = Image.new('RGBA', self.original_image.size)
         mosaic_position = (
-            int(self.bounding_box["x1"] + self.segment_box["x1"]), int(self.bounding_box["y1"] + self.segment_box["y1"]))
+            int(self.bounding_box["x1"] + self.segment_box["x1"]),
+            int(self.bounding_box["y1"] + self.segment_box["y1"]))
         final_image.paste(mask, mosaic_position)
+
+        # color change
+        r, g, b, a = final_image.split()
+        white_r = Image.new('L', r.size, 255)
+        white_g = Image.new('L', g.size, 255)
+        white_b = Image.new('L', b.size, 255)
+        final_image = Image.merge('RGBA', (white_r, white_g, white_b, a))
+
+        if blur_radius == 0:
+            return final_image
+
+        return self.filter_blur(final_image, blur_radius)
+
+    def filter_blur(self, image: Image.Image, blur_radius: float):
+        r, g, b, a = image.split()
+        rgb_image = Image.merge('RGB', (r, g, b))
+        blurred_rgb_image = rgb_image.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+        blurred_alpha_channel = a.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+        final_image = Image.merge('RGBA', (
+            blurred_rgb_image.getchannel('R'), blurred_rgb_image.getchannel('G'), blurred_rgb_image.getchannel('B'),
+            blurred_alpha_channel))
+
         return final_image
 
     def create_transparent_mask(self, segment_box: Dict[str, int], segments: Dict[str, list],
-                                margin: int=5) -> tuple[Image, Image]:
+                                margin: int = 5) -> tuple[Image, Image]:
         """
         Create a transparent mask for image segmentation.
         """
@@ -183,7 +246,7 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
                     if name not in result:
                         result[name] = []
 
-                    result[name].append(detected.get_mosaic())
+                    result[name].append(detected)
 
     return result
 
