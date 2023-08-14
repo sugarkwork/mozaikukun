@@ -293,7 +293,7 @@ def main():
                 new_image_filename = (f"{os.path.splitext(os.path.basename(image_name))[0]}_"
                                       f"{sensitive_area}_{image_number}.png")
                 image_save_path = os.path.join(output_dir, new_image_filename)
-                result_image.save(image_save_path)
+                result_image.get_image("mosaic").save(image_save_path)
                 print(f"save: {image_save_path}")
                 image_number += 1
 
