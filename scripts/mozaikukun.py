@@ -14,7 +14,7 @@ from mozaikukun import process_and_analyze_image
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def get_segmenter_models():
-    model_dir = Path(os.path.join(THIS_DIR, "../"))
+    model_dir = Path(os.path.normpath(os.path.join(THIS_DIR, "../")))
     model_paths = [
         p
         for p in model_dir.rglob("*")
@@ -30,7 +30,7 @@ def get_segmenter_models():
 DEFAULT_SEGMENTER = "myseg7.pt"
 
 class Mozaikukun(scripts.Script):
-    object_detector = YOLO(os.path.join(THIS_DIR, "../", "yolov8x.pt"))
+    object_detector = YOLO("yolov8x.pt")
     segmenter_models = get_segmenter_models()
 
     def title(self):
