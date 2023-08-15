@@ -7,14 +7,18 @@ AI will automatically mosaic the obscene part of the obscene image.
 * Run webui.bat
 
 ## Manual installation (Windows)
-* pip3 install pillow
-* pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-* pip3 install ultralytics
-* pip3 install gradio
+* git clone https://github.com/sugarkwork/mozaikukun
+* cd mozaikukun
+* python -m vnev venv
+* venv\scripts\activate
+* pip install cython
+* pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+* pip install https://download.lfd.uci.edu/pythonlibs/archived/pytoshop-1.2.1-cp310-cp310-win_amd64.whl
+* pip install -r requirements.txt
 
 ## Run in console
 
-* Create an input directory.
+* Create an "input" directory.
 * Put the image you want to mosaic in the input directory.
 * Run: python mozaikukun.py
 * An output directory will be created and the layers of the mosaicked image will be output.
