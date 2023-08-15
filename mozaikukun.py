@@ -10,7 +10,12 @@ from PIL import ImageFilter
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
 from typing import Dict, Tuple
-import psd_save
+
+try:
+    # Ignore import errors as we only use the console version at this time.
+    import psd_save
+except:
+    pass
 
 
 BLOCK_SIZE_RATIO = 100
