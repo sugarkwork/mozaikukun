@@ -8,8 +8,10 @@ import numpy as np
 from ultralytics import YOLO
 
 import modules.scripts as scripts
+from modules import script_callbacks
 
 from mozaikukun import process_and_analyze_image
+from mozaikukun_ui import full_ui, inputs_ui
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -96,3 +98,8 @@ class Mozaikukun(scripts.Script):
             return
 
         pp.image = self.mosaic_process(pp.image, segmenter_name, pussy, penis, sex, anus, nipples)
+
+def on_ui_tabs():
+    return (full_ui(), "Mozaikukun", "mozaikukun"),
+
+script_callbacks.on_ui_tabs(on_ui_tabs)
