@@ -9,7 +9,7 @@ AI will automatically mosaic the obscene part of the obscene image.
 ## Manual installation (Windows)
 * git clone https://github.com/sugarkwork/mozaikukun
 * cd mozaikukun
-* python -m vnev venv
+* python -m venv venv
 * venv\scripts\activate
 * pip install cython
 * pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
