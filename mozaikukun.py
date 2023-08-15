@@ -76,7 +76,7 @@ class DetectedObject:
     def get_white(self, options: dict = None) -> Image.Image:
         if options is None:
             options = {}
-        blur_radius = min(max(float(options.get("blur_radius", 5)), 0.0), 1.0)
+        blur_radius = min(max(float(options.get("blur_radius", 5)), 0.0), 100)
         margin = min(max(int(options.get("margin", 5)), 0), 1024)
 
         # draw
