@@ -10,6 +10,8 @@ from PIL import ImageFilter
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
 from typing import Dict, Tuple
+import psd_save
+
 
 BLOCK_SIZE_RATIO = 100
 MARGIN_FACTOR = 3
@@ -270,9 +272,12 @@ def main():
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
 
+    images = {}
+
     # task queue
     for image_path in glob("input/*.jpg"):
-        task_queue.put((Image.open(image_path), image_path, {}))
+        images[image_path] = Image.open(image_path)
+        task_queue.put((images[image_path], image_path, {}))
 
     # exit command
     for _ in range(worker_count):
@@ -285,19 +290,22 @@ def main():
             result_data, image_name = result_queue.get(timeout=1)
         except Empty:
             continue
+
+        input_img = images.get(image_name)
+        psd = psd_save.Psd()
+        psd.add_image(input_img, os.path.splitext(os.path.basename(image_name))[0])
+
         for sensitive_area in sensitive_areas:
             image_number = 0
             if sensitive_area not in result_data:
                 continue
             for result_image in result_data[sensitive_area]:
-                new_image_filename = (f"{os.path.splitext(os.path.basename(image_name))[0]}_"
-                                      f"{sensitive_area}_{image_number}.png")
-                image_save_path = os.path.join(output_dir, new_image_filename)
-                result_image.get_image("mosaic").save(image_save_path)
-                print(f"save: {image_save_path}")
+                layer_name = f"{sensitive_area} {image_number}"
+                psd.add_image(result_image.get_image("white"), layer_name)
                 image_number += 1
 
-    # join
+        psd.save(os.path.join(output_dir, f"{os.path.splitext(os.path.basename(image_name))[0]}.psd"))
+
     for worker in worker_processes:
         worker.join()
         print(f"join subprocess : {worker}")
