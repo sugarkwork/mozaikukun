@@ -198,7 +198,7 @@ def calculate_pixel_block_and_margin(image: Image.Image) -> Tuple[int, int]:
 def image_detection_worker(process_id: int, input_queue: Queue, result_queue: Queue):
     print(f"start subprocess {process_id}")
     object_detector = YOLO("yolov8x.pt")
-    segmenter = YOLO("myseg7.pt")
+    segmenter = YOLO("myseg9.pt")
     while True:
         img, name, options = input_queue.get()
         if img == None and name == None and options == None:
@@ -288,7 +288,18 @@ def main():
     for _ in range(worker_count):
         task_queue.put((None, None, None))
 
-    sensitive_areas = ["pussy", "penis", "sex"]
+    sensitive_areas = [
+        "pussy",
+        "penis",
+        "sex"
+    ]
+
+    options = {
+        "margin": 5,          # Extend the detected range (px)
+        "rate": 1.0,          # Change the percentage of the mosaic size (1/100 of the long side of the image).
+        "increase_level": 5,  # The percentage to make transparent parts opaque.
+        "blur_radius": 10     # Specify the blur size.
+    }
 
     while not result_queue.empty() or any(p.is_alive() for p in worker_processes):
         try:
@@ -306,7 +317,7 @@ def main():
                 continue
             for result_image in result_data[sensitive_area]:
                 layer_name = f"{sensitive_area} {image_number}"
-                psd.add_image(result_image.get_image("white"), layer_name)
+                psd.add_image(result_image.get_image("mosaic", options=options), layer_name)
                 image_number += 1
 
         psd.save(os.path.join(output_dir, f"{os.path.splitext(os.path.basename(image_name))[0]}.psd"))
