@@ -279,8 +279,14 @@ def main():
 
     images = {}
 
+    # input files
+    input_image_extensions = ['jpg', 'png', 'bmp', 'jpeg', 'webp']
+    input_files = []
+    for extension in input_image_extensions:
+        input_files += glob(f"input/*.{extension}")
+
     # task queue
-    for image_path in glob("input/*.jpg"):
+    for image_path in input_files:
         images[image_path] = Image.open(image_path)
         task_queue.put((images[image_path], image_path, {}))
 
@@ -301,6 +307,8 @@ def main():
         "blur_radius": 10     # Specify the blur size.
     }
 
+    output_names = []
+
     while not result_queue.empty() or any(p.is_alive() for p in worker_processes):
         try:
             result_data, image_name = result_queue.get(timeout=1)
@@ -320,7 +328,21 @@ def main():
                 psd.add_image(result_image.get_image("mosaic", options=options), layer_name)
                 image_number += 1
 
-        psd.save(os.path.join(output_dir, f"{os.path.splitext(os.path.basename(image_name))[0]}.psd"))
+        file_count = 0
+        while True:
+            filename_num = ''
+            if file_count > 0:
+                filename_num = f"_{file_count}"
+
+            output_filename = os.path.join(
+                output_dir,
+                f"{os.path.splitext(os.path.basename(image_name))[0]}{filename_num}.psd")
+            if output_filename not in output_names:
+                output_names.append(output_filename)
+                psd.save(output_filename)
+                break
+
+            file_count += 1
 
     for worker in worker_processes:
         worker.join()
