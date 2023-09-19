@@ -1,5 +1,6 @@
 import math
 import os
+import argparse
 from glob import glob
 from multiprocessing import Process, Queue
 import json
@@ -258,10 +259,28 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
     return result
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Process images and detect sensitive areas.')
+    parser.add_argument('--input', type=str, default='input',
+                        help='Input directory containing images.')
+    parser.add_argument('--output', type=str, default='output',
+                        help='Output directory to save processed images.')
+    parser.add_argument('--process', type=str, default='mosaic',
+                        help='process mode = raw/mosaic/white/star/heart/blur')
+    parser.add_argument('--worker_count', type=int, default=3,
+                        help='Number of worker processes.')
+
+    return parser.parse_args()
+
+
 def main():
     print("Start processing...")
-    worker_count = 3
 
+    # check model
+    YOLO("yolov8x.pt")
+
+    # worker
+    worker_count = args.worker_count
     worker_processes = []
     task_queue = Queue()
     result_queue = Queue()
@@ -274,7 +293,7 @@ def main():
         worker_processes.append(p)
 
     # dir
-    output_dir = "output"
+    output_dir = args.output
     os.makedirs(output_dir, exist_ok=True)
 
     images = {}
@@ -283,7 +302,7 @@ def main():
     input_image_extensions = ['jpg', 'png', 'bmp', 'jpeg', 'webp']
     input_files = []
     for extension in input_image_extensions:
-        input_files += glob(f"input/*.{extension}")
+        input_files += glob(f"{args.input}/*.{extension}")
 
     # task queue
     for image_path in input_files:
@@ -340,6 +359,7 @@ def main():
             if output_filename not in output_names:
                 output_names.append(output_filename)
                 psd.save(output_filename)
+                print(f'save: {output_filename}')
                 break
 
             file_count += 1
@@ -350,4 +370,5 @@ def main():
 
 
 if __name__ == '__main__':
+    args = parse_arguments()
     main()
