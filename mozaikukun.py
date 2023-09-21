@@ -48,6 +48,8 @@ class DetectedObject:
         if process_type not in supported_types:
             process_type = "mosaic"
 
+        if options is None:
+            options = {}
         return supported_types[process_type](options)
 
     def get_star(self, _: dict = None) -> None:
@@ -56,15 +58,26 @@ class DetectedObject:
     def get_heart(self, _: dict = None) -> None:
         return None
 
-    def get_blur(self, _: dict = None) -> None:
-        return None
+    def get_blur(self, options: dict = None) -> Image.Image:
+        rate = min(max(float(options.get("rate", 1.0)), 0.0), 1.0)
+        margin = min(max(int(options.get("margin", 5)), 0), 1024)
+        increase_level = min(max(int(options.get("increase_level", 10)), 0), 1024)
+
+        mask, empty_mask = self.create_transparent_mask(self.segment_box, self.segments, margin)
+        blur_cropped = self.filter_blur(self.cropped_region, int(self.block_size * rate))
+        masked_image = self.apply_mask_on_image(blur_cropped, self.segment_box, mask, empty_mask)
+        final_image = Image.new('RGBA', self.original_image.size)
+        final_image.save('final_image.png')
+        mosaic_position = (
+            int(self.bounding_box["x1"] + self.segment_box["x1"]),
+            int(self.bounding_box["y1"] + self.segment_box["y1"]))
+        final_image.paste(masked_image, mosaic_position)
+        return self.increase_image_opacity(final_image, increase_level)
 
     def get_raw(self, _: dict = None) -> None:
         return None
 
     def get_mosaic(self, options: dict = None) -> Image.Image:
-        if options is None:
-            options = {}
         rate = min(max(float(options.get("rate", 1.0)), 0.0), 1.0)
         margin = min(max(int(options.get("margin", 5)), 0), 1024)
         increase_level = min(max(int(options.get("increase_level", 10)), 0), 1024)
@@ -80,8 +93,6 @@ class DetectedObject:
         return self.increase_image_opacity(final_image, increase_level)
 
     def get_white(self, options: dict = None) -> Image.Image:
-        if options is None:
-            options = {}
         blur_radius = min(max(float(options.get("blur_radius", 5)), 0.0), 100)
         margin = min(max(int(options.get("margin", 5)), 0), 1024)
 
