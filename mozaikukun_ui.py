@@ -41,11 +41,11 @@ def mosaic_process(input_img, pussy, penis, sex, anus, nipple, margin, blur_radi
 
 def inputs_ui():
     with gr.Column():
-        pussy = gr.Dropdown(label="pussy", value="mosaic", choices=['raw', 'mosaic', 'white'])
-        penis = gr.Dropdown(label="penis", value="mosaic", choices=['raw', 'mosaic', 'white'])
-        sex = gr.Dropdown(label="sex", value="mosaic", choices=['raw', 'mosaic', 'white'])
-        anus = gr.Dropdown(label="anus", value="raw", choices=['raw', 'mosaic', 'white'])
-        nipples = gr.Dropdown(label="nipples", value="raw", choices=['raw', 'mosaic', 'white'])
+        pussy = gr.Dropdown(label="pussy", value="mosaic", choices=['raw', 'mosaic', 'white', 'blur'])
+        penis = gr.Dropdown(label="penis", value="mosaic", choices=['raw', 'mosaic', 'white', 'blur'])
+        sex = gr.Dropdown(label="sex", value="mosaic", choices=['raw', 'mosaic', 'white', 'blur'])
+        anus = gr.Dropdown(label="anus", value="raw", choices=['raw', 'mosaic', 'white', 'blur'])
+        nipples = gr.Dropdown(label="nipples", value="raw", choices=['raw', 'mosaic', 'white', 'blur'])
     with gr.Column():
         margin = gr.Slider(label="margin", value=5)
         blur_radius = gr.Slider(label="blur_radius (white)", value=5)
