@@ -13,7 +13,6 @@ AI will automatically mosaic the obscene part of the obscene image.
 * venv\scripts\activate
 * pip install cython
 * pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-* pip install https://download.lfd.uci.edu/pythonlibs/archived/pytoshop-1.2.1-cp310-cp310-win_amd64.whl
 * pip install -r requirements.txt
 
 ## Run in console
@@ -35,3 +34,8 @@ AI will automatically mosaic the obscene part of the obscene image.
 3. Enter https://github.com/sugarkwork/mozaikukun.git to "URL for extension's git repository".
 4. Press "Install" button.
 5. Stop webui once and please specify `--disable-safe-unpickle` commandline argument
+
+# Other
+If you have an image that does not work properly (cannot be detected), please upload the image to the URL below. We will use it to train the model.
+
+https://ai.sugar-knight.com/mosaic/
