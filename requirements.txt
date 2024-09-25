@@ -2,6 +2,6 @@ cython
 gradio
 numpy
 opencv-python
-Pillow
-ultralytics==8.0.154
-pytoshop
+Pillow==10.4.0
+ultralytics
+psd-tools @ git+https://github.com/psd-tools/psd-tools.git@57822ec

@@ -13,8 +13,8 @@ from PIL import Image, ImageDraw
 from typing import Dict, Tuple
 
 try:
-    # Ignore import errors as we only use the console version at this time.
-    import psd_save
+    from psd_tools import PSDImage
+    from psd_tools.api.layers import PixelLayer
 except:
     pass
 
@@ -128,7 +128,7 @@ class DetectedObject:
         return final_image
 
     def create_transparent_mask(self, segment_box: Dict[str, int], segments: Dict[str, list],
-                                margin: int = 5) -> tuple[Image, Image]:
+                                margin: int = 5) -> Tuple[Image.Image, Image.Image]:
         """
         Create a transparent mask for image segmentation.
         """
@@ -210,7 +210,7 @@ def calculate_pixel_block_and_margin(image: Image.Image) -> Tuple[int, int]:
 def image_detection_worker(process_id: int, input_queue: Queue, result_queue: Queue):
     print(f"start subprocess {process_id}")
     object_detector = YOLO("yolov8x.pt")
-    segmenter = YOLO("myseg9.pt")
+    segmenter = YOLO("myseg10.pt")
     while True:
         img, name, options = input_queue.get()
         if img == None and name == None and options == None:
@@ -247,7 +247,7 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
             cropped_region = original_image.crop(
                 (bounding_box["x1"], bounding_box["y1"], bounding_box["x2"], bounding_box["y2"]))
 
-            segmentation_results = segmenter(cropped_region, save=False, device=DEVICE, project="myseg2", name="pname2",
+            segmentation_results = segmenter(cropped_region, save=False, device=DEVICE, project="myseg10", name="pname2",
                                              verbose=False)
             for segmentation in segmentation_results:
                 for segmented_object in json.loads(segmentation.tojson()):
@@ -346,8 +346,11 @@ def main():
             continue
 
         input_img = images.get(image_name)
-        psd = psd_save.Psd()
-        psd.add_image(input_img, os.path.splitext(os.path.basename(image_name))[0])
+        psd = PSDImage.new(mode='RGBA', size=(input_img.width, input_img.height))
+        psd.append(PixelLayer.frompil(
+            pil_im=input_img, 
+            psd_file=psd, 
+            layer_name=os.path.splitext(os.path.basename(image_name))[0]))
 
         for sensitive_area in sensitive_areas:
             image_number = 0
@@ -355,7 +358,10 @@ def main():
                 continue
             for result_image in result_data[sensitive_area]:
                 layer_name = f"{sensitive_area} {image_number}"
-                psd.add_image(result_image.get_image("mosaic", options=options), layer_name)
+                psd.append(PixelLayer.frompil(
+                    pil_im=result_image.get_image("mosaic", options=options), 
+                    psd_file=psd, 
+                    layer_name=layer_name))
                 image_number += 1
 
         file_count = 0
