@@ -4,4 +4,4 @@ numpy
 opencv-python
 Pillow==10.4.0
 ultralytics
-psd-tools @ git+https://github.com/psd-tools/psd-tools.git@57822ec
+psd-tools@git+https://github.com/psd-tools/psd-tools.git@57822ec
