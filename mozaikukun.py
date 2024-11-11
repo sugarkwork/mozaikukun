@@ -5,18 +5,13 @@ from glob import glob
 from multiprocessing import Process, Queue
 import json
 import time
-from _queue import Empty
 from PIL.Image import Image
 from PIL import ImageFilter
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
 from typing import Dict, Tuple
-
-try:
-    from psd_tools import PSDImage
-    from psd_tools.api.layers import PixelLayer
-except:
-    pass
+from psd_tools import PSDImage
+from psd_tools.api.layers import PixelLayer, Group
 
 
 BLOCK_SIZE_RATIO = 100
@@ -239,7 +234,7 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
     result = {}
 
     for detection in detection_results:
-        for detected_object in json.loads(detection.tojson()):
+        for detected_object in json.loads(detection.to_json()):
             if detected_object["name"] != "person":
                 continue
             bounding_box = resize_bounding_box(detected_object["box"], margin, block_size)
@@ -250,7 +245,7 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
             segmentation_results = segmenter(cropped_region, save=False, device=DEVICE, project="myseg10", name="pname2",
                                              verbose=False)
             for segmentation in segmentation_results:
-                for segmented_object in json.loads(segmentation.tojson()):
+                for segmented_object in json.loads(segmentation.to_json()):
                     name = segmented_object["name"]
                     segments = segmented_object["segments"]
                     segment_box = resize_bounding_box(segmented_object["box"], margin, block_size)
@@ -342,7 +337,7 @@ def main():
     while not result_queue.empty() or any(p.is_alive() for p in worker_processes):
         try:
             result_data, image_name = result_queue.get(timeout=1)
-        except Empty:
+        except:
             continue
 
         input_img = images.get(image_name)

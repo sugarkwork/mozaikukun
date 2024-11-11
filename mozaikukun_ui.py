@@ -9,7 +9,7 @@ from ultralytics import YOLO
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 
 object_detector = YOLO("yolov8x.pt")
-segmenter = YOLO(os.path.normpath(os.path.join(THIS_DIR, "myseg7.pt")))
+segmenter = YOLO(os.path.normpath(os.path.join(THIS_DIR, "myseg10.pt")))
 
 
 def mosaic_process(input_img, pussy, penis, sex, anus, nipple, margin, blur_radius, rate):
