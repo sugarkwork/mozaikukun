@@ -15,6 +15,9 @@ AI will automatically mosaic the obscene part of the obscene image.
 * pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 * pip install -r requirements.txt
 
+## Run in colab
+https://colab.research.google.com/drive/1CP9YWN1NkeET2C5aKAIgplCbEYRAsAP6?usp=sharing
+
 ## Run in console
 
 * Create an "input" directory.
