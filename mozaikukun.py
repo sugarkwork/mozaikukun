@@ -10,8 +10,6 @@ from PIL import ImageFilter
 from ultralytics import YOLO
 from PIL import Image, ImageDraw
 from typing import Dict, Tuple
-from psd_tools import PSDImage
-from psd_tools.api.layers import PixelLayer, Group
 
 
 BLOCK_SIZE_RATIO = 100
@@ -245,6 +243,8 @@ def process_and_analyze_image(image: Image.Image, object_detector: YOLO, segment
             segmentation_results = segmenter(cropped_region, save=False, device=DEVICE, project="myseg10", name="pname2",
                                              verbose=False)
             for segmentation in segmentation_results:
+                # keypoints = segmentation.keypoints
+                # print(dir(segmentation), segmentation.to_json(), type(segmentation), dir(keypoints), type(keypoints))
                 for segmented_object in json.loads(segmentation.to_json()):
                     name = segmented_object["name"]
                     segments = segmented_object["segments"]
@@ -281,6 +281,15 @@ def parse_arguments():
 
 def main():
     print("Start processing...")
+
+    psd_output = False
+    try:
+        from psd_tools import PSDImage
+        from psd_tools.api.layers import PixelLayer, Group
+        psd_output = True
+    except ImportError:
+        print("psd_tools is not installed. PSD file output is disabled.")
+        print("command> pip install -U git+https://github.com/psd-tools/psd-tools.git")
 
     # check model
     YOLO("yolov8x.pt")
@@ -341,11 +350,16 @@ def main():
             continue
 
         input_img = images.get(image_name)
-        psd = PSDImage.new(mode='RGBA', size=(input_img.width, input_img.height))
-        psd.append(PixelLayer.frompil(
-            pil_im=input_img, 
-            psd_file=psd, 
-            layer_name=os.path.splitext(os.path.basename(image_name))[0]))
+        base_name = os.path.splitext(os.path.basename(image_name))[0]
+        if psd_output:
+            psd = PSDImage.new(mode='RGBA', size=(input_img.width, input_img.height))
+            psd.append(PixelLayer.frompil(
+                pil_im=input_img, 
+                psd_file=psd, 
+                layer_name=base_name))
+        else:
+            input_img.save(os.path.join(output_dir, base_name + "_01_original.png"))
+        
 
         for sensitive_area in sensitive_areas:
             image_number = 0
@@ -353,28 +367,32 @@ def main():
                 continue
             for result_image in result_data[sensitive_area]:
                 layer_name = f"{sensitive_area} {image_number}"
-                psd.append(PixelLayer.frompil(
-                    pil_im=result_image.get_image("mosaic", options=options), 
-                    psd_file=psd, 
-                    layer_name=layer_name))
+                if psd_output:
+                    psd.append(PixelLayer.frompil(
+                        pil_im=result_image.get_image("mosaic", options=options), 
+                        psd_file=psd, 
+                        layer_name=layer_name))
+                else:
+                    result_image.get_image("mosaic", options=options).save(os.path.join(output_dir, f"{base_name}_{image_number}_{layer_name}.png"))
                 image_number += 1
 
-        file_count = 0
-        while True:
-            filename_num = ''
-            if file_count > 0:
-                filename_num = f"_{file_count}"
+        if psd_output:
+            file_count = 0
+            while True:
+                filename_num = ''
+                if file_count > 0:
+                    filename_num = f"_{file_count}"
 
-            output_filename = os.path.join(
-                output_dir,
-                f"{os.path.splitext(os.path.basename(image_name))[0]}{filename_num}.psd")
-            if output_filename not in output_names:
-                output_names.append(output_filename)
-                psd.save(output_filename)
-                print(f'save: {output_filename}')
-                break
+                output_filename = os.path.join(
+                    output_dir,
+                    f"{os.path.splitext(os.path.basename(image_name))[0]}{filename_num}.psd")
+                if output_filename not in output_names:
+                    output_names.append(output_filename)
+                    psd.save(output_filename)
+                    print(f'save: {output_filename}')
+                    break
 
-            file_count += 1
+                file_count += 1
 
     for worker in worker_processes:
         worker.join()

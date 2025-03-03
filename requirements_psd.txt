@@ -1,0 +1,5 @@
+gradio
+numpy
+Pillow
+ultralytics
+psd-tools @ git+https://github.com/psd-tools/psd-tools.git
